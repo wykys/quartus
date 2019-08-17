@@ -87,7 +87,7 @@ ssh-copy-id wykys@localhost
 
 
 ### Instalace rozšíření hosta
-Rozšíření pro hosta optimalizují jádro pro věh ve virtuálním stroji, dále umožní sdílet složky mezi hostitelským strojem a hostem a mnoho dalšího.
+Rozšíření pro hosta optimalizují jádro pro běh ve virtuálním stroji, dále umožní sdílet složky mezi hostitelským strojem a hostem a mnoho dalšího.
 
 Pro jejich instalaci je nejprve potřeba do mechaniky vložit obraz z rozšířeními. To provedeme pomocí `Zažízení`->`Vložit obraz CD disku s přídavky pro hosta...` Které najdeme v nástrojové liště běžícího virtuálního okna.
 
@@ -153,12 +153,56 @@ dnf install langpacks-en
 ./setup.sh
 ```
 
+Cíl instalace nastavím do `/opt/intelFPGA_lite/18.1/`
 
-## Použití
+### Instalace USB Blaster
+Nejprve je třeba umožnit přístup uživateli VirtualBoxu spuštěného z hostitelského počítače přístup k USB zařízením. Toho lze dosáhnout přidáním hostitelského uživatele do vhodné skupiny.
+```bash
+# přidání do skupiny uživatelů VirtualBoxu
+sudo usermod -aG vboxusers wykys
+# aby se změna projevila je třeba se znovu přihlásit nebo restart
+sudo reboot
+```
+
+Poté je třeba v `Nastavení` virtuálního stroje v záložce `USB` nastavit `USB 3.0 (xHCI) řadič` a na sdílet `USB-Blaster`.
+
+```bash
+# ověření že jse nám podařilo propojit USB-Blaster s virtuálním strojem
+lsusb | grep Blaster
+# pokud je vše nastavené dobře uvidíme Blaster ve výpisu
+# Bus 001 Device 005: ID 09fb:6001 Altera Blaster
+```
+
+
+Následně je potřeba nastavit ve virtuálním stroji práva pro používání USB Blasteru. K tomu stačí na server do složky `/etc/udev/rules.d/` umístit soubor `92-usbblaster.rules`.
+```bash
+# zkopírování pravidel pro USB Blaster na server přes SSH
+scp -P2222 92-usbblaster.rules root@localhost:/etc/udev/rules.d/
+```
+
+JTAG deamon potřebuje pro svůj běh knihovnu `libudev.so.0`, ale ta v systému není a není ani v repozitářích. Dá se to ale obejít vytvořením symbolického odkazu na `libudec.so.1` knihovnu který v systému žu je.
+```bash
+# přechod do složky se systémovými knihovnami
+cd /lib64
+# vytvoření knihovny libudev.so.0 odkazem na libudev.so.1
+ln -s libudev.so.1 libudev.so.0
+```
+
+Teď můžeme ověřit funkci programátoru.
+```bash
+# spuštění konfigurace programátoru
+/opt/intelFPGA_lite/18.1/quartus/bin/jtagconfig 
+# pokud je programátor rozpoznám získáme následující výpis
+# 1) USB-Blaster [1-2]
+#   020F10DD   10CL006(Y|Z)/10CL010(Y|Z)/..
+
+```
+
+### Použití
 Quartus jednoduše můžeme spustit pomocí SSH tunelu.
 ```bash
 # spuštní IDE Quartus II
-ssh -X -p2222 wykys@localhost /opt/intelFPGA_lite/18.1/quartus/bin/quartus
+ssh -X -p2222 wykys@localhost /opt/intelFPGA_lite/18.1/quartus/bin/quartus --64bit
 ```
 
 Pokud vám překáží okno virtuálního stroje lze ho zapnout na pozadí následujícím příkazem a nebo podržením klávesy shift při spouštění s GUI VirtualBoxu.
@@ -167,8 +211,8 @@ Pokud vám překáží okno virtuálního stroje lze ho zapnout na pozadí násl
 VBoxManage startvm quartus --type headless
 ```
 
-## Skript quartus
-Pro jednodušší ovládání můžete použít můj skript quartus, který umožňuje snadné spouštění a vypínání virtuálního stroje i Quartus II IDE.
+## Skript `quartus.sh`
+Pro jednodušší ovládání můžete použít můj skript `quartus.sh`, který umožňuje snadné spouštění a vypínání virtuálního stroje i Quartus II IDE.
 
 ### Instalace skriptu
 Odkaz na skript je vhodné umístit do složky kterou máte zahrnutou v proměnné prostředí `$PATH`.
@@ -182,7 +226,7 @@ ln -s `pwd`/quartus.sh ~/.local/bin/quartus
 
 ### Help
 ```bash
-usage: quartus [-h] [-p] [-r] [-o]
+usage: quartus [-h] [-p] [-r] [-o] [-s]
 
 This script makes it easy to control a virtual machine and
 run the Quartus II IDE on it.
@@ -197,8 +241,9 @@ run the Quartus II IDE on it.
 
     quartus -o    it only starts the virtual machine
 
-    quartus -h    show this help message and exit
+    quartus -s    opens ssh connection with a virtual machine
 
+    quartus -h    show this help message and exit
 ```
 
 
@@ -207,6 +252,6 @@ Po spuštění počítače automaticky spustí virtuální stroj na pozadí a za
 ```bash
 # základní použití
 quartus
-# vypnutí virtuálního serveru 
+# vypnutí virtuálního stroje 
 quartus -p
 ```

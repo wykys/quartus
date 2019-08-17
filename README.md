@@ -18,7 +18,7 @@ Poté instalace probíhá klasickou cestou pomocí správce balíčků
 sudo apt install virtualbox-6.0
 ```
 
-Následně je dobré [stáhnout](https://download.virtualbox.org/virtualbox/6.0.10/Oracle_VM_VirtualBox_Extension_Pack-6.0.10.vbox-extpack) VirtualBox Extension Pack, abychom mohli používat USB 2.0.
+Následně je dobré [stáhnout](https://download.virtualbox.org/virtualbox/6.0.10/Oracle_VM_VirtualBox_Extension_Pack-6.0.10.vbox-extpack) VirtualBox Extension Pack, abychom mohli optimalizovat jádro pro virtualizaci a sdílet zařízení a složky.
 ```bash
 # instalace rozšíření
 virtualbox Oracle_VM_VirtualBox_Extension_Pack-6.0.10.vbox-extpack 
@@ -122,7 +122,7 @@ usermod -aG vboxsf wykys
 ```
 
 ### Instalace X serveru
-X Server nám umožní spouštět na serveru grafické aplikace a jejich GUI přenášet pomocí SSH tunelu na hostující systém.
+X Server nám umožní spouštět na serveru grafické aplikace a jejich GUI přenášet pomocí SSH tunelu na hostitelský systém.
 
 ```bash
 # instalace potřebných balíčků
@@ -133,7 +133,7 @@ echo "X11Forwarding yes" >> /etc/ssh/sshd_config
 systemctl restart sshd
 ```
 
-Funkčnost si můžeme ověřit. Pokud se vče povede, tak vás bude sledovat pár očí.
+Funkčnost si můžeme ověřit. Pokud se vše povede, tak vás bude sledovat pár očí.
 ```bash
 # parametr -X povolí GUI
 ssh -X -p2222 wykys@localhost xeyes
